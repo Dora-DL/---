@@ -59,6 +59,8 @@
             font-family: 'Courier New', monospace;
             resize: vertical;
             transition: border-color 0.3s;
+            white-space: nowrap;
+            overflow-x: auto;
         }
 
         textarea:focus {
@@ -532,10 +534,25 @@
 
         function parseLinks(text) {
             if (!text.trim()) return [];
-            const regex = /(https?:\/\/[^\s,]+)/g;
-            const matches = text.match(regex);
-            if (!matches) return [];
-            return [...new Set(matches.map(url => url.trim()).filter(url => url.length > 0))];
+
+            const lines = text.split('\n');
+            const urls = [];
+            let current = '';
+
+            for (const rawLine of lines) {
+                const line = rawLine.trim();
+                if (!line) continue;
+
+                if (/^https?:\/\//.test(line)) {
+                    if (current) urls.push(current);
+                    current = line;
+                } else if (current) {
+                    current += line;
+                }
+            }
+            if (current) urls.push(current);
+
+            return [...new Set(urls.filter(url => url.length > 0))];
         }
 
         function showToast(message, type = 'success') {
