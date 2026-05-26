@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的 GitHub Pages 作品集</title>
+    <style>
+        :root {
+            --primary-color: #24292f;
+            --accent-color: #0969da;
+            --bg-color: #f6f8fa;
+            --card-bg: #ffffff;
+            --text-color: #24292f;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        header p {
+            color: #57606a;
+            font-size: 16px;
+        }
+
+        .links-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .link-card {
+            background-color: var(--card-bg);
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 16px 20px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .link-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 3px 12px rgba(9, 105, 218, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .link-info h2 {
+            font-size: 18px;
+            margin: 0 0 6px 0;
+            color: var(--accent-color);
+        }
+
+        .link-info p {
+            margin: 0;
+            font-size: 14px;
+            color: #57606a;
+        }
+
+        .arrow {
+            font-size: 20px;
+            color: #8c959f;
+            transition: transform 0.2s;
+        }
+
+        .link-card:hover .arrow {
+            transform: translateX(4px);
+            color: var(--accent-color);
+        }
+
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 12px;
+            color: #8c959f;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>我的个人主页</h1>
+            <p>点击下方链接访问我的其他页面和项目</p>
+        </header>
+
+        <main class="links-list">
+            
+            <a href="link_fetcher.html" class="link-card">
+                <div class="link-info">
+                    <h2>🔗 链接提取器 (Link Fetcher)</h2>
+                    <p>一个用来快速提取和整理网页链接的小工具。</p>
+                </div>
+                <div class="arrow">➔</div>
+            </a>
+
+            <a href="page2.html" class="link-card">
+                <div class="link-info">
+                    <h2>示例页面二</h2>
+                    <p>这里放关于这个页面的简单介绍或描述。</p>
+                </div>
+                <div class="arrow">➔</div>
+            </a>
+
+            </main>
+
+        <footer>
+            <p>© 2026 Powered by GitHub Pages</p>
+        </footer>
+    </div>
+
+</body>
+</html>
