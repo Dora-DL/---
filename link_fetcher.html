@@ -458,7 +458,11 @@
             <div class="options">
                 <div class="option-group">
                     <label for="concurrency">并发数：</label>
-                    <input type="number" id="concurrency" value="20" min="1" max="50">
+                    <input type="number" id="concurrency" value="1" min="1" max="50">
+                </div>
+                <div class="option-group">
+                    <label for="interval">执行间隔（秒）：</label>
+                    <input type="number" id="interval" value="4" min="0" max="60" step="1">
                 </div>
                 <div class="option-group">
                     <label for="timeout">超时时间（毫秒）：</label>
@@ -535,6 +539,8 @@
         function parseLinks(text) {
             if (!text.trim()) return [];
 
+            // 支持跨行URL拼接：如果一行以http开头开启新链接，
+            // 下一行不以http开头则视为当前链接的延续
             const lines = text.split('\n');
             const urls = [];
             let current = '';
@@ -544,9 +550,11 @@
                 if (!line) continue;
 
                 if (/^https?:\/\//.test(line)) {
+                    // 新URL开始，先保存上一个
                     if (current) urls.push(current);
                     current = line;
                 } else if (current) {
+                    // 不是新URL，拼接到上一个（处理硬换行截断）
                     current += line;
                 }
             }
@@ -613,8 +621,14 @@
                 return;
             }
 
-            const concurrency = parseInt(document.getElementById('concurrency').value) || 20;
+            let concurrency = parseInt(document.getElementById('concurrency').value) || 1;
             const timeout = parseInt(document.getElementById('timeout').value) || 10000;
+            const interval = parseInt(document.getElementById('interval').value) || 0;
+
+            // 如果设置了间隔时间，强制串行执行（间隔与并发在逻辑上互斥）
+            if (interval > 0) {
+                concurrency = 1;
+            }
 
             allResults = [];
             document.getElementById('fetchBtn').disabled = true;
@@ -629,40 +643,70 @@
             let successCount = 0;
             let errorCount = 0;
 
-            const queue = [...links];
-            const executing = [];
+            // 串行模式（有间隔）
+            if (interval > 0) {
+                for (let i = 0; i < links.length; i++) {
+                    const url = links[i];
+                    updateProgress(i, links.length);
+                    document.getElementById('progressText').textContent = `正在执行第 ${i + 1}/${links.length} 个...`;
 
-            while (queue.length > 0 || executing.length > 0) {
-                while (executing.length < concurrency && queue.length > 0) {
-                    const url = queue.shift();
-                    const promise = (async () => {
-                        const result = await fetchUrl(url, timeout);
-                        allResults.push({ url, ...result });
+                    const result = await fetchUrl(url, timeout);
+                    allResults.push({ url, ...result });
 
-                        if (result.fetched && result.isSuccess) {
-                            successCount++;
-                        } else {
-                            errorCount++;
-                        }
+                    if (result.fetched && result.isSuccess) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
 
-                        document.getElementById('successCount').textContent = successCount;
-                        document.getElementById('errorCount').textContent = errorCount;
-                        updateProgress(allResults.length, links.length);
-                        addResultToList(url, result);
-                    })();
+                    document.getElementById('successCount').textContent = successCount;
+                    document.getElementById('errorCount').textContent = errorCount;
+                    addResultToList(url, result);
 
-                    executing.push(promise);
-                    promise.then(() => {
-                        const index = executing.indexOf(promise);
-                        if (index > -1) executing.splice(index, 1);
-                    });
+                    if (i < links.length - 1) {
+                        document.getElementById('progressText').textContent = `等待 ${interval} 秒后执行下一个...`;
+                        await new Promise(resolve => setTimeout(resolve, interval * 1000));
+                    }
                 }
+            }
+            // 并发模式（无间隔）
+            else {
+                const queue = [...links];
+                const executing = [];
 
-                if (executing.length > 0) {
-                    await Promise.race(executing);
+                while (queue.length > 0 || executing.length > 0) {
+                    while (executing.length < concurrency && queue.length > 0) {
+                        const url = queue.shift();
+                        const promise = (async () => {
+                            const result = await fetchUrl(url, timeout);
+                            allResults.push({ url, ...result });
+
+                            if (result.fetched && result.isSuccess) {
+                                successCount++;
+                            } else {
+                                errorCount++;
+                            }
+
+                            document.getElementById('successCount').textContent = successCount;
+                            document.getElementById('errorCount').textContent = errorCount;
+                            updateProgress(allResults.length, links.length);
+                            addResultToList(url, result);
+                        })();
+
+                        executing.push(promise);
+                        promise.then(() => {
+                            const index = executing.indexOf(promise);
+                            if (index > -1) executing.splice(index, 1);
+                        });
+                    }
+
+                    if (executing.length > 0) {
+                        await Promise.race(executing);
+                    }
                 }
             }
 
+            updateProgress(links.length, links.length);
             document.getElementById('fetchBtn').disabled = false;
             document.getElementById('progressSection').classList.remove('active');
             document.getElementById('resultsSection').classList.add('active');
