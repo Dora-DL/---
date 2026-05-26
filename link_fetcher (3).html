@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量链接执行器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 25px;
+            font-size: 1rem;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            padding: 14px;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+
+        .options {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .option-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .option-group label {
+            margin-bottom: 0;
+            font-weight: normal;
+            color: #666;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 6px 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #1890ff;
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #40a9ff;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-success {
+            background: #52c41a;
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background: #73d13d;
+        }
+
+        /* 问号帮助图标 */
+        .help-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #d9d9d9;
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 6px;
+            position: relative;
+            user-select: none;
+        }
+
+        .help-icon:hover {
+            background: #1890ff;
+        }
+
+        .help-tooltip {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            background: #333;
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: normal;
+            line-height: 1.6;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .help-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #333;
+        }
+
+        .help-icon:hover .help-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .progress-section {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #1890ff;
+            width: 0%;
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .results-header h2 {
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .stats-inline {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .stats-inline .ok { color: #52c41a; font-weight: 600; }
+        .stats-inline .fail { color: #ff4d4f; font-weight: 600; }
+
+        /* 判断规则提示 - 放在结果板块上方 */
+        .rule-hint {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #0958d9;
+        }
+
+        .rule-hint code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .result-table {
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .result-row {
+            display: flex;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .col-url {
+            width: 320px;
+            min-width: 320px;
+            padding: 12px 15px;
+            border-right: 1px solid #e8e8e8;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+        }
+
+        .col-content {
+            flex: 1;
+            padding: 12px 15px;
+            min-height: 60px;
+        }
+
+        /* 成功行 - 左侧绿色背景 */
+        .row-success .col-url {
+            background: #f6ffed;
+            border-left: 4px solid #52c41a;
+        }
+
+        .row-success .col-content {
+            background: #f6ffed;
+        }
+
+        /* 失败行 - 左侧红色背景 */
+        .row-fail .col-url {
+            background: #fff2f0;
+            border-left: 4px solid #ff4d4f;
+        }
+
+        .row-fail .col-content {
+            background: #fff2f0;
+        }
+
+        .content-text {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: #333;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 400px;
+            overflow: auto;
+            width: 100%;
+        }
+
+        .fail-reason {
+            color: #ff4d4f;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            padding: 6px 10px;
+            background: #fff;
+            border-radius: 4px;
+            border-left: 3px solid #ff4d4f;
+        }
+
+        .success-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #52c41a;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+        }
+
+        .fail-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #ff4d4f;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+        }
+
+        .ai-prompt-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e8e8e8;
+        }
+
+        .ai-prompt-section h3 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .ai-prompt-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            background: #fafafa;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 0.9rem;
+        }
+
+        .toast.show { transform: translateX(0); }
+        .toast-success { background: #52c41a; }
+        .toast-error { background: #ff4d4f; }
+
+        @media (max-width: 768px) {
+            .result-row { flex-direction: column; }
+            .col-url {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e8e8e8;
+            }
+            .help-tooltip {
+                width: 260px;
+                left: auto;
+                right: 0;
+                transform: none;
+            }
+            .help-tooltip::after {
+                left: auto;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 批量链接执行器</h1>
+        <p class="subtitle">粘贴多个链接，批量执行并查看结果</p>
+
+        <div class="card">
+            <label for="linkInput">粘贴链接（每行一个，支持逗号/空格分隔）：</label>
+            <textarea id="linkInput" placeholder="https://example.com/api/1&#10;https://example.com/api/2&#10;https://example.com/api/3"></textarea>
+
+            <div class="options">
+                <div class="option-group">
+                    <label for="concurrency">并发数：</label>
+                    <input type="number" id="concurrency" value="20" min="1" max="50">
+                </div>
+                <div class="option-group">
+                    <label for="timeout">超时时间（毫秒）：</label>
+                    <input type="number" id="timeout" value="10000" min="1000" step="1000">
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="fetchBtn" onclick="startFetch()">
+                    <span>🚀</span> 开始执行
+                </button>
+                <button class="btn btn-secondary" onclick="clearAll()">
+                    <span>🗑️</span> 清空
+                </button>
+                <button class="btn btn-success" id="aiPromptBtn" onclick="generateAIPrompt()">
+                    <span>🤖</span> 生成 AI Prompt
+                </button>
+                <!-- 问号帮助图标，默认就显示在旁边 -->
+                <div class="help-icon" id="aiHelpIcon">
+                    ?
+                    <div class="help-tooltip">
+                        这个按钮是干嘛的？<br><br>
+                        如果有些链接执行失败了，点这个按钮，它会自动把失败的链接整理成一段话。<br><br>
+                        你复制这段话发给 AI（比如我），AI 就能用自己的方式帮你把那些失败的链接重新执行一遍，把结果返回给你。<br><br>
+                        <strong>简单说：浏览器搞不定的，让 AI 帮你搞。</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-section" id="progressSection">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">准备中...</div>
+            </div>
+        </div>
+
+        <div class="card results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>📊 执行结果</h2>
+                <div class="stats-inline">
+                    <span>总计: <b id="totalCount">0</b></span>
+                    <span class="ok">成功: <b id="successCount">0</b></span>
+                    <span class="fail">失败: <b id="errorCount">0</b></span>
+                </div>
+            </div>
+
+            <!-- 判断规则移到了结果板块上方 -->
+            <div class="rule-hint">
+                <strong>判断规则：</strong>页面返回内容中包含 <code>"msg": "SUCESS",</code> 时标记为「成功」，否则标记为「失败」。无论成功或失败，右侧均展示页面返回的文本内容。
+            </div>
+
+            <div class="result-table" id="resultsList"></div>
+        </div>
+
+        <div class="card ai-prompt-section" id="aiPromptSection" style="display: none;">
+            <h3>🤖 AI 求助文案</h3>
+            <p style="color:#666; font-size:0.85rem; margin-bottom:10px;">以下文案已自动筛选出执行失败的链接，复制后发送给任意 AI 助手即可：</p>
+            <textarea class="ai-prompt-textarea" id="aiPromptText" readonly></textarea>
+            <div class="actions" style="margin-top: 10px;">
+                <button class="btn btn-primary" onclick="copyAIPrompt()">
+                    <span>📋</span> 复制文案
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 存储所有执行结果
+        let allResults = [];
+
+        function parseLinks(text) {
+            if (!text.trim()) return [];
+            const regex = /(https?:\/\/[^\s,]+)/g;
+            const matches = text.match(regex);
+            if (!matches) return [];
+            return [...new Set(matches.map(url => url.trim()).filter(url => url.length > 0))];
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast toast-${type}`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function checkSuccess(text) {
+            // 使用正则匹配，忽略空格差异（如 "msg":"SUCESS" 或 "msg": "SUCESS"）
+            return text && /"msg"\s*:\s*"SUCESS"/.test(text);
+        }
+
+        async function fetchUrl(url, timeout) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    }
+                });
+                clearTimeout(timeoutId);
+                const text = await response.text();
+                const isSuccess = checkSuccess(text);
+
+                return {
+                    fetched: true,
+                    status: response.status,
+                    text: text,
+                    isSuccess: isSuccess
+                };
+            } catch (error) {
+                clearTimeout(timeoutId);
+                return {
+                    fetched: false,
+                    error: error.name === 'AbortError' ? '请求超时' : error.message,
+                    text: ''
+                };
+            }
+        }
+
+        function updateProgress(current, total) {
+            const percent = Math.round((current / total) * 100);
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = `处理中... ${current}/${total}`;
+        }
+
+        async function startFetch() {
+            const links = parseLinks(document.getElementById('linkInput').value);
+            if (links.length === 0) {
+                showToast('请先输入有效的链接', 'error');
+                return;
+            }
+
+            const concurrency = parseInt(document.getElementById('concurrency').value) || 20;
+            const timeout = parseInt(document.getElementById('timeout').value) || 10000;
+
+            allResults = [];
+            document.getElementById('fetchBtn').disabled = true;
+            document.getElementById('progressSection').classList.add('active');
+            document.getElementById('resultsSection').classList.remove('active');
+            document.getElementById('resultsList').innerHTML = '';
+            document.getElementById('aiPromptSection').style.display = 'none';
+            document.getElementById('totalCount').textContent = links.length;
+            document.getElementById('successCount').textContent = '0';
+            document.getElementById('errorCount').textContent = '0';
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            const queue = [...links];
+            const executing = [];
+
+            while (queue.length > 0 || executing.length > 0) {
+                while (executing.length < concurrency && queue.length > 0) {
+                    const url = queue.shift();
+                    const promise = (async () => {
+                        const result = await fetchUrl(url, timeout);
+                        allResults.push({ url, ...result });
+
+                        if (result.fetched && result.isSuccess) {
+                            successCount++;
+                        } else {
+                            errorCount++;
+                        }
+
+                        document.getElementById('successCount').textContent = successCount;
+                        document.getElementById('errorCount').textContent = errorCount;
+                        updateProgress(allResults.length, links.length);
+                        addResultToList(url, result);
+                    })();
+
+                    executing.push(promise);
+                    promise.then(() => {
+                        const index = executing.indexOf(promise);
+                        if (index > -1) executing.splice(index, 1);
+                    });
+                }
+
+                if (executing.length > 0) {
+                    await Promise.race(executing);
+                }
+            }
+
+            document.getElementById('fetchBtn').disabled = false;
+            document.getElementById('progressSection').classList.remove('active');
+            document.getElementById('resultsSection').classList.add('active');
+
+            showToast(`完成！成功: ${successCount}, 失败: ${errorCount}`);
+        }
+
+        function addResultToList(url, result) {
+            const container = document.getElementById('resultsList');
+            const row = document.createElement('div');
+            row.className = 'result-row';
+
+            if (result.fetched && result.isSuccess) {
+                row.classList.add('row-success');
+                row.innerHTML = `
+                    <div class="col-url">
+                        <div class="success-badge">成功</div>
+                        <div>${url}</div>
+                    </div>
+                    <div class="col-content">
+                        <div class="content-text">${escapeHtml(result.text)}</div>
+                    </div>
+                `;
+            } else {
+                row.classList.add('row-fail');
+                const reason = !result.fetched
+                    ? `执行失败：${result.error}`
+                    : `页面内容中未找到 "msg": "SUCESS"（HTTP 状态码: ${result.status}）`;
+                row.innerHTML = `
+                    <div class="col-url">
+                        <div class="fail-badge">失败</div>
+                        <div>${url}</div>
+                    </div>
+                    <div class="col-content">
+                        <div class="fail-reason">${reason}</div>
+                        <div class="content-text">${result.text ? escapeHtml(result.text) : '（无返回内容）'}</div>
+                    </div>
+                `;
+            }
+
+            container.appendChild(row);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function clearAll() {
+            document.getElementById('linkInput').value = '';
+            document.getElementById('resultsSection').classList.remove('active');
+            document.getElementById('resultsList').innerHTML = '';
+            document.getElementById('aiPromptSection').style.display = 'none';
+            allResults = [];
+            showToast('已清空');
+        }
+
+        function generateAIPrompt() {
+            // 只筛选出失败的链接
+            const failedResults = allResults.filter(r => !r.fetched || !r.isSuccess);
+
+            if (failedResults.length === 0) {
+                showToast('当前没有执行失败的链接', 'error');
+                return;
+            }
+
+            const failedUrls = failedResults.map(r => r.url);
+
+            const prompt = `我有一批链接在浏览器中执行失败了，请你帮我重新执行并获取每个页面的完整文本内容。
+
+失败的链接如下（共 ${failedUrls.length} 个）：
+
+${failedUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}
+
+要求：
+1. 请逐个访问上述链接
+2. 将每个页面返回的完整文本内容返回给我
+3. 对每个链接标注是否包含 "msg": "SUCESS" 这个字符串
+4. 如果某个链接你访问不了，请告诉我具体原因`;
+
+            document.getElementById('aiPromptText').value = prompt;
+            document.getElementById('aiPromptSection').style.display = 'block';
+            showToast('已生成失败链接的 AI 求助文案');
+        }
+
+        function copyAIPrompt() {
+            const textarea = document.getElementById('aiPromptText');
+            textarea.select();
+            document.execCommand('copy');
+            showToast('已复制到剪贴板');
+        }
+    </script>
+</body>
+</html>
